@@ -1,5 +1,5 @@
 import requests
-from PySide2 import QtWidgets, QtCore, QtGui
+from PySide2 import QtWidgets, QtCore, QtGui, QtNetwork
 from PySide2.QtCore import Qt, QUrl
 from PySide2.QtNetwork import QNetworkAccessManager, QNetworkRequest
 from PySide2.QtWidgets import QTableWidgetItem
@@ -23,7 +23,9 @@ class MakeCurse(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.BASE_URL = 'http://127.0.0.1:8000/films/'
         self.TOKEN = 'Token 8aba548ab94bbaa47b0c9a4cd9423ecaacb696e4'
-        self.HEADERS = {'Authorization': self.TOKEN}
+        self.HEADERS = {
+            'Authorization': self.TOKEN,
+        }
 
         self.tableWidget.setColumnCount(2)
         self.tableWidget.setHorizontalHeaderLabels(['#', 'Название'])
@@ -85,9 +87,9 @@ class MakeCurse(QtWidgets.QMainWindow, Ui_MainWindow):
             'description': self.textEdit_coments.toPlainText(),
             'country': self.comboBox_country.currentIndex(),
             'category': self.comboBox_category.currentIndex(),
-            'image': self.imagus,
         }
-        response = requests.post(self.BASE_URL, headers=self.HEADERS, data=payload)
+        file = {'image': self.file}
+        response = requests.post(self.BASE_URL, headers=self.HEADERS, data=payload, files=file)
         if response.status_code == 201:
             self.get_films()
 
@@ -106,10 +108,10 @@ class MakeCurse(QtWidgets.QMainWindow, Ui_MainWindow):
             'description': self.textEdit_coments.toPlainText(),
             'country': self.comboBox_country.currentIndex(),
             'category': self.comboBox_category.currentIndex(),
-            'image': self.imagus,
         }
+        file = {'image': self.file}
         film_id = self.textEdit_Number.toPlainText()
-        response = requests.patch(self.BASE_URL + film_id, headers=self.HEADERS, data=payload)
+        response = requests.patch(self.BASE_URL + film_id, headers=self.HEADERS, data=payload, files=file)
         if response.status_code == 200:
             self.get_films()
 
@@ -120,7 +122,7 @@ class MakeCurse(QtWidgets.QMainWindow, Ui_MainWindow):
             json_response = response.json()
             nam = QNetworkAccessManager(self)
             nam.finished.connect(self.get_image_from_url)
-            nam.get(QNetworkRequest(QUrl(json_response['file'])))
+            nam.get(QNetworkRequest(QUrl(json_response['image'])))
             self.textEdit_Name.setText(json_response['name'])
             self.textEdit_actor.setText(json_response['actor'])
             self.textEdit_coments.setText(json_response['description'])
@@ -135,6 +137,7 @@ class MakeCurse(QtWidgets.QMainWindow, Ui_MainWindow):
     def get_image(self):
         filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, 'Single File', QtCore.QDir.rootPath(), '*')
         try:
+            self.file = open(filename, 'rb')
             self.imagus = QtGui.QPixmap(filename)
             self.label_pic.setPixmap(filename)
             self.label_pic.setScaledContents(True)
